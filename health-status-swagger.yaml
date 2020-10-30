@@ -1,0 +1,378 @@
+swagger: '2.0'
+info:
+  description: Swagger Spec for the Nuapay TPP OpenBanking/PSD2. Provides PISP and Banks Endpoints
+  version: '1.0.0'
+  title: Nuapay TPP API Specification
+  contact:
+    name: Nuapay
+    email: 'api.support@nuapay.com'
+  license:
+    name: 'Nuapay'
+    url: 'https://sentenial.com'
+  x-logo:
+    backgroundColor: '#FFFFFF'
+    url: 'https://www.nuapay.com/wp-content/uploads/2018/04/nuapay.svg'
+host: 'api.nuapay.com'
+basePath: /
+schemes:
+  - https
+tags:
+  - name: Status Service
+    description: |-
+      The Status API's enables a merchant to retrieve:
+      *	the health status of all banks,
+      *	individual bank health status.
+
+      The health score of the bank is represented with a Integer value between 0-100.  Score equal to `-1`indicates Nuapay TPP has no connectivity with the bank for that services.
+paths:
+  /status/banks:
+    get:
+      tags:
+        - Status Service
+      summary: Retrieve Banks Status
+      description: Retrieve banks connection Status.
+      operationId: getBanksStatusUsingGET
+      produces:
+        - application/json
+      parameters:
+        - name: bankid
+          in: query
+          required: false
+          description: Use it to filter banks to health to be returned for
+          type: array
+          items:
+            type: string
+          collectionFormat: multi
+        - name: maximumpaymentservicescore
+          in: query
+          description: Use it to filter banks based on their Status. 100 means there are no known connectivity issues, 0 means bank is unavailable.
+          type: integer
+          format: int32
+          default: 100
+          maximum: 100
+          minimum: 0
+        - name: pagenumber
+          in: query
+          description: Page number
+          required: false
+          type: integer
+          default: 1
+          format: int32
+        - name: pagesize
+          in: query
+          description: Page size
+          required: false
+          type: integer
+          default: 1000
+          format: int32
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/BanksStatusResponse'
+        400:
+          description: Bad request
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+          examples:
+            application/json:
+              returnCode: "T0000"
+              returnDescription: Validation errors occurred. Please see details.
+              details:
+                code: "T0001"
+                description: Page  is invalid
+                field: page
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+          examples:
+            application/json:
+              returnCode: null
+              returnDescription: null
+              details: null
+        403:
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+          examples:
+            application/json:
+              returnCode: null
+              returnDescription: null
+              details: null
+        405:
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+          examples:
+            application/json:
+              returnCode: null
+              returnDescription: null
+              details: null
+        429:
+          description: Too Many Requests
+          x-sentenial:
+            enriched: "true"
+          headers:
+            Retry-After:
+              type: integer
+              format: int32
+              description: Number in seconds to wait
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+          examples:
+            application/json:
+              returnCode: null
+              returnDescription: null
+              details: null
+      security:
+        - MerchantOAuth2:
+            - openbanking_aspsp_status
+        - MerchantApiKey: [ ]
+        - PartnerOAuth2:
+            - openbanking_aspsp_status
+        - PartnerApiKey: [ ]
+  /status/banks/{bankId}:
+    get:
+      tags:
+        - Status Service
+      summary: Retrieve Bank Status
+      description: Retrieve Bank Status
+      operationId: getBankStatusUsingGET
+      produces:
+        - application/json
+      parameters:
+        - name: bankId
+          in: path
+          description: Bank id returned by Get Banks endpoint.
+          required: true
+          type: string
+      responses:
+        200:
+          description: OK
+          schema:
+            $ref: '#/definitions/BankStatusResponseEnvelope'
+        401:
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+          examples:
+            application/json:
+              returnCode: null
+              returnDescription: null
+              details: null
+        403:
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+          examples:
+            application/json:
+              returnCode: null
+              returnDescription: null
+              details: null
+        404:
+          description: Not Found
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+          examples:
+            application/json:
+              returnCode: null
+              returnDescription: null
+              details: nul
+        405:
+          description: Method Not Allowed
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+          examples:
+            application/json:
+              returnCode: null
+              returnDescription: null
+              details: null
+        429:
+          description: Too Many Requests
+          x-sentenial:
+            enriched: "true"
+          headers:
+            Retry-After:
+              type: integer
+              format: int32
+              description: Number in seconds to wait
+          schema:
+            $ref: '#/definitions/ErrorResponse'
+          examples:
+            application/json:
+              returnCode: null
+              returnDescription: null
+              details: null
+      security:
+        - MerchantOAuth2:
+            - openbanking_aspsp_status
+        - MerchantApiKey: [ ]
+        - PartnerOAuth2:
+            - openbanking_aspsp_status
+        - PartnerApiKey: [ ]
+securityDefinitions:
+  MerchantApiKey:
+    type: basic
+  PartnerApiKey:
+    type: basic
+  MerchantOAuth2:
+    type: oauth2
+    tokenUrl: https://api.nuapay.com/oauth/token_key
+    flow: password
+    scopes:
+      openbanking_aisp: Account Information Service Provider access
+      openbanking_pisp: Payment Initiation Service Provider access
+      openbanking_pisp_read: Read Account and Payment Information  access
+      openbanking_refund: Open Banking Refund access
+      openbanking_refund_read: Read Open Banking Refunds access
+      openbanking_callback: Open Banking Callback Forwarding access
+      openbanking_aspsp_status: Open Banking Banks Connection Status access
+  PartnerOAuth2:
+    type: oauth2
+    tokenUrl: https://api.nuapay.com/oauth/token_key
+    flow: password
+    scopes:
+      openbanking_aisp: Account Information Service Provider access
+      openbanking_pisp: Payment Initiation Service Provider access
+      openbanking_pisp_read: Read Account and Payment Information  access
+      openbanking_callback: Open Banking Callback Forwarding access
+      openbanking_aspsp_status: Open Banking Banks Connection Status access
+definitions:
+  BankStatus:
+    type: object
+    required:
+      - id
+      - uri
+      - paymentServiceScore
+      - accountServiceScore
+    properties:
+      id:
+        type: string
+        description: The Banks Id
+      uri:
+        type: string
+        description: Uri to Bank Resource
+      paymentServiceScore:
+        type: integer
+        format: int32
+        minimum: -1
+        maximum: 100
+        description: |-
+          The health score of the bank service is represented with a Integer value between 0-100.
+          * Score equal `0` should be interpreted as bank is not available at the moment.
+          * Score equal to `100` would mean there are no known connection issues for the bank.
+          *	Score `-1` - Indicates Nuapay TPP has no connectivity with the bank for that services
+      accountServiceScore:
+        type: integer
+        format: int32
+        minimum: -1
+        maximum: 100
+        description: |-
+          The health score of the bank service is represented with a Integer value between 0-100.
+          * Score equal `0` should be interpreted as bank is not available at the moment.
+          * Score equal to `100` would mean there are no known connection issues for the bank.
+          *	Score `-1` - Indicates Nuapay TPP has no connectivity with the bank for that services
+    title: BankStatus
+  BanksStatusResponse:
+    type: object
+    required:
+      - data
+      - uri
+      - page
+      - sort
+    properties:
+      uri:
+        type: string
+        description: Holds queried resource uri.
+      data:
+        type: array
+        description: Banks status collection
+        items:
+          $ref: '#/definitions/BankStatus'
+      page:
+        $ref: '#/definitions/RestResponsePaginationDetails'
+      sort:
+        type: array
+        items:
+          type: string
+    title: BanksStatusResponse
+    example:
+      uri: /status/banks
+      data:
+        - id: 8ow24y2pdx
+          uri: /status/banks/8ow24y2pdx
+          paymentServiceScore: 100
+          accountServiceScore: -1
+      page:
+        pageNumber: 1
+        pageSize: 1000
+        totalElements: 1
+        totalPages: 1
+      sort: [ ]
+  BankStatusResponseEnvelope:
+    type: object
+    required:
+      - data
+      - uri
+    properties:
+      uri:
+        type: string
+        description: Holds resource uri.
+      data:
+        $ref: '#/definitions/BankStatus'
+    title: BankStatusResponseEnvelope
+    example:
+      uri: /status/banks
+      data:
+        id: 8ow24y2pdx
+        uri: /status/banks/8ow24y2pdx
+        paymentServiceScore: 0
+        accountServiceScore: -1
+  ErrorDetailsItem:
+    type: object
+    properties:
+      code:
+        type: string
+        description: Error code
+      description:
+        type: string
+        description: Error description
+      field:
+        type: string
+        description: JSON path to request object property the error is related to
+    title: ErrorDetailsItem
+  ErrorResponse:
+    type: object
+    properties:
+      details:
+        type: array
+        description: Holds list of input validation errors
+        items:
+          $ref: '#/definitions/ErrorDetailsItem'
+      returnCode:
+        type: string
+        description: Error type code
+      returnDescription:
+        type: string
+        description: Error type description
+    title: ErrorResponse
+  RestResponsePaginationDetails:
+    type: object
+    properties:
+      pageNumber:
+        type: integer
+        format: int32
+        description: Page Number
+      pageSize:
+        type: integer
+        format: int32
+        description: Page Size
+      totalElements:
+        type: integer
+        format: int32
+        description: Total Number of elements returned. Response parameter only
+      totalPages:
+        type: integer
+        format: int32
+        description: Total Number of pages returned. Response parameter only
